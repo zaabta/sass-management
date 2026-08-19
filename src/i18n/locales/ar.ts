@@ -684,6 +684,7 @@ export default {
       col_price: 'السعر المتفق عليه',
       col_currency: 'العملة',
       filter_status: 'الحالة',
+      filter_current: 'السارية (تجريبي / فعّال / متأخر)',
       renew: 'تجديد',
       extend: 'تمديد',
       change_plan: 'تغيير الخطة',

@@ -65,6 +65,7 @@ export function SubscriptionsPage() {
         <div className="table-tools">
           <Select value={status} onChange={(e) => setStatus(e.target.value)} aria-label={t('admin.subscriptions.filter_status')} style={{ width: 'auto' }}>
             <option value="ALL">{t('admin.subscriptions.filter_status')}: {t('all')}</option>
+            <option value="CURRENT">{t('admin.subscriptions.filter_current')}</option>
             {(['TRIAL', 'ACTIVE', 'PAST_DUE', 'EXPIRED', 'SUSPENDED', 'CANCELLED'] as const).map((s) => (
               <option key={s} value={s}>{t(`admin.subscription_status.${s}`)}</option>
             ))}

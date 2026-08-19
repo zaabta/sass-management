@@ -1250,7 +1250,10 @@ route('GET', '/api/v1/admin/subscriptions', async (req, res) => {
   if (!s) return;
   const q = getCustomerQuery(req);
   let list = db.customers.flatMap((c) => c.subscriptions.map((sub) => ({ ...sub, customerCode: c.code })));
-  if (q.status && q.status !== 'ALL') list = list.filter((x) => x.status === q.status);
+  if (q.status && q.status !== 'ALL') {
+    if (q.status === 'CURRENT') list = list.filter((x) => ['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(x.status));
+    else list = list.filter((x) => x.status === q.status);
+  }
   if (q.customerId) list = list.filter((x) => x.customerId === q.customerId);
   if (q.plan) list = list.filter((x) => x.planCode === q.plan);
   if (q.search) {

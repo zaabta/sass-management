@@ -716,6 +716,7 @@ export default {
       col_price: 'Agreed price',
       col_currency: 'Currency',
       filter_status: 'Status',
+      filter_current: 'Current (trial / active / past due)',
       renew: 'Renew',
       extend: 'Extend',
       change_plan: 'Change plan',
