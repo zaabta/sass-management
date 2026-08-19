@@ -27,6 +27,15 @@ import { PaymentsPage } from './features/saas-admin/pages/PaymentsPage';
 import { UsersPage } from './features/saas-admin/pages/UsersPage';
 import { PlatformUsersPage } from './features/saas-admin/pages/PlatformUsersPage';
 import { AuditPage } from './features/saas-admin/pages/AuditPage';
+import { CompaniesPage as AdminCompaniesPage } from './features/saas-admin/pages/CompaniesPage';
+import { BranchesPage as AdminBranchesPage } from './features/saas-admin/pages/BranchesPage';
+import { InvoicesPage } from './features/saas-admin/pages/InvoicesPage';
+import { UsagePage } from './features/saas-admin/pages/UsagePage';
+import { AiUsagePage } from './features/saas-admin/pages/AiUsagePage';
+import { SystemHealthPage } from './features/saas-admin/pages/SystemHealthPage';
+import { SettingsPage } from './features/saas-admin/pages/SettingsPage';
+import { ActivityPage } from './features/saas-admin/pages/ActivityPage';
+import { SubscriptionDetailPage } from './features/saas-admin/pages/SubscriptionDetailPage';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -138,13 +147,22 @@ export default function App() {
                     <Route path="customers" element={<CustomersPage />} />
                     <Route path="customers/create" element={<CreateCustomerPage />} />
                     <Route path="customers/:id" element={<CustomerDetailPage />} />
+                    <Route path="companies" element={<AdminCompaniesPage />} />
+                    <Route path="branches" element={<AdminBranchesPage />} />
                     <Route path="subscriptions" element={<SubscriptionsPage />} />
+                    <Route path="subscriptions/:id" element={<SubscriptionDetailPage />} />
                     <Route path="plans" element={<PlansPage />} />
                     <Route path="features" element={<FeaturesPage />} />
                     <Route path="payments" element={<PaymentsPage />} />
+                    <Route path="invoices" element={<InvoicesPage />} />
                     <Route path="users" element={<UsersPage />} />
                     <Route path="platform-users" element={<PlatformUsersPage />} />
                     <Route path="audit" element={<AuditPage />} />
+                    <Route path="activity" element={<ActivityPage />} />
+                    <Route path="usage" element={<UsagePage />} />
+                    <Route path="ai-usage" element={<AiUsagePage />} />
+                    <Route path="health" element={<SystemHealthPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
                   </Route>
                 </Route>
               </Route>

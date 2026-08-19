@@ -6,8 +6,11 @@ import { queryKeys, invalidateCustomer } from '../../../lib/queryKeys';
 import { isApiError } from '../../../api/client';
 import { formatDateTime } from '../../../lib/format';
 import type { CustomerUser } from '../../../api/types';
-import { Badge, Button, Card, CardSkeleton, ConfirmDialog, EmptyState, MembershipStatusBadge, PageHeader, RoleBadge, Select, TableSkeleton, useToast } from '../../../components/ui';
+import { Badge, Button, Card, CardSkeleton, ConfirmDialog, EmptyState, Field, MembershipStatusBadge, PageHeader, RoleBadge, SearchInput, Select, TableSkeleton, useToast } from '../../../components/ui';
+import { ActionMenu } from '../../../components/admin';
+import { FilterSheet } from '../components/chrome';
 import { UserDrawer } from '../components/drawers';
+import { SlidersHorizontal } from 'lucide-react';
 import { canAccessSection, hasPerm } from '../AdminLayout';
 import { useSessionData } from '../../../hooks/useSession';
 import { Navigate } from 'react-router-dom';
@@ -20,7 +23,8 @@ export function UsersPage() {
   const role = session?.user.platformRole ?? null;
   const canWrite = hasPerm(role, 'saas.user.write');
 
-  const [filters, setFilters] = useState<Record<string, string>>({ customerId: '', role: '', membershipStatus: '', active: '' });
+  const [filters, setFilters] = useState<Record<string, string>>({ customerId: '', role: '', membershipStatus: '', active: '', search: '' });
+  const [filterOpen, setFilterOpen] = useState(false);
   const [editing, setEditing] = useState<CustomerUser | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [confirm, setConfirm] = useState<{ user: CustomerUser; action: 'disable' | 'enable' | 'suspend' | 'reactivate' } | null>(null);
@@ -69,31 +73,52 @@ export function UsersPage() {
         actions={canWrite ? <Button variant="primary" onClick={() => { setEditing(null); setDrawerOpen(true); }}>+ {t('admin.users.add')}</Button> : undefined}
       />
       <Card>
-        <div className="table-tools">
-          <Select value={filters.customerId} onChange={(e) => setFilters((f) => ({ ...f, customerId: e.target.value }))} style={{ width: 'auto' }} aria-label={t('admin.users.filter_customer')}>
-            <option value="">{t('admin.users.filter_customer')}: {t('all')}</option>
-            {customersQ.data?.items.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </Select>
-          <Select value={filters.role} onChange={(e) => setFilters((f) => ({ ...f, role: e.target.value }))} style={{ width: 'auto' }} aria-label={t('admin.users.filter_role')}>
-            <option value="">{t('admin.users.filter_role')}: {t('all')}</option>
-            {ROLES.map((r) => (
-              <option key={r} value={r}>{t(`admin.roles.${r}`)}</option>
-            ))}
-          </Select>
-          <Select value={filters.membershipStatus} onChange={(e) => setFilters((f) => ({ ...f, membershipStatus: e.target.value }))} style={{ width: 'auto' }} aria-label={t('admin.users.filter_membership')}>
-            <option value="">{t('admin.users.filter_membership')}: {t('all')}</option>
-            {(['INVITED', 'ACTIVE', 'SUSPENDED', 'DISABLED'] as const).map((s) => (
-              <option key={s} value={s}>{t(`admin.membership.${s}`)}</option>
-            ))}
-          </Select>
-          <Select value={filters.active} onChange={(e) => setFilters((f) => ({ ...f, active: e.target.value }))} style={{ width: 'auto' }} aria-label={t('admin.users.filter_active')}>
-            <option value="">{t('admin.users.filter_active')}: {t('admin.users.any')}</option>
-            <option value="true">{t('admin.users.active')}</option>
-            <option value="false">{t('admin.users.inactive')}</option>
-          </Select>
+        <div className="sa-toolbar">
+          <div className="grow">
+            <SearchInput value={filters.search} onChange={(v) => setFilters((f) => ({ ...f, search: v }))} placeholder={t('admin.users.search')} />
+          </div>
+          <Button size="sm" onClick={() => setFilterOpen(true)}>
+            <SlidersHorizontal size={14} /> {t('admin.customers.filters')}
+          </Button>
         </div>
+        <FilterSheet
+          open={filterOpen}
+          onClose={() => setFilterOpen(false)}
+          title={t('admin.customers.filters')}
+          onReset={() => setFilters({ customerId: '', role: '', membershipStatus: '', active: '', search: '' })}
+        >
+          <Field label={t('admin.users.filter_customer')}>
+            <Select value={filters.customerId} onChange={(e) => setFilters((f) => ({ ...f, customerId: e.target.value }))}>
+              <option value="">{t('all')}</option>
+              {customersQ.data?.items.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t('admin.users.filter_role')}>
+            <Select value={filters.role} onChange={(e) => setFilters((f) => ({ ...f, role: e.target.value }))}>
+              <option value="">{t('all')}</option>
+              {ROLES.map((r) => (
+                <option key={r} value={r}>{t(`admin.roles.${r}`)}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t('admin.users.filter_membership')}>
+            <Select value={filters.membershipStatus} onChange={(e) => setFilters((f) => ({ ...f, membershipStatus: e.target.value }))}>
+              <option value="">{t('all')}</option>
+              {(['INVITED', 'ACTIVE', 'SUSPENDED', 'DISABLED'] as const).map((s) => (
+                <option key={s} value={s}>{t(`admin.membership.${s}`)}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t('admin.users.filter_active')}>
+            <Select value={filters.active} onChange={(e) => setFilters((f) => ({ ...f, active: e.target.value }))}>
+              <option value="">{t('admin.users.any')}</option>
+              <option value="true">{t('admin.users.active')}</option>
+              <option value="false">{t('admin.users.inactive')}</option>
+            </Select>
+          </Field>
+        </FilterSheet>
         <div className="table-wrap">
           <table className="data-table">
             <thead>
@@ -126,13 +151,23 @@ export function UsersPage() {
                   <td className="tnum muted text-sm">{formatDateTime(u.lastLoginAt, i18n.language)}</td>
                   {canWrite && (
                     <td>
-                      <div className="flex" style={{ gap: 4 }}>
-                        <Button size="sm" variant="ghost" onClick={() => { setEditing(u); setDrawerOpen(true); }}>{t('admin.users.edit')}</Button>
-                        {u.isActive && u.membershipStatus !== 'SUSPENDED' && u.membershipStatus !== 'DISABLED' && <Button size="sm" variant="ghost" onClick={() => setConfirm({ user: u, action: 'suspend' })}>{t('admin.users.suspend')}</Button>}
-                        {u.membershipStatus === 'SUSPENDED' && <Button size="sm" variant="ghost" onClick={() => setConfirm({ user: u, action: 'reactivate' })}>{t('admin.users.unsuspend')}</Button>}
-                        {u.isActive && u.membershipStatus !== 'DISABLED' && <Button size="sm" variant="danger-ghost" onClick={() => setConfirm({ user: u, action: 'disable' })}>{t('admin.users.disable')}</Button>}
-                        {(!u.isActive || u.membershipStatus === 'DISABLED') && <Button size="sm" variant="ghost" onClick={() => setConfirm({ user: u, action: 'enable' })}>{t('admin.users.enable')}</Button>}
-                      </div>
+                      <ActionMenu
+                        items={[
+                          { label: t('admin.users.edit'), onClick: () => { setEditing(u); setDrawerOpen(true); } },
+                          ...(u.isActive && u.membershipStatus !== 'SUSPENDED' && u.membershipStatus !== 'DISABLED'
+                            ? [{ label: t('admin.users.suspend'), onClick: () => setConfirm({ user: u, action: 'suspend' as const }) }]
+                            : []),
+                          ...(u.membershipStatus === 'SUSPENDED'
+                            ? [{ label: t('admin.users.unsuspend'), onClick: () => setConfirm({ user: u, action: 'reactivate' as const }) }]
+                            : []),
+                          ...(u.isActive && u.membershipStatus !== 'DISABLED'
+                            ? [{ label: t('admin.users.disable'), onClick: () => setConfirm({ user: u, action: 'disable' as const }), danger: true }]
+                            : []),
+                          ...(!u.isActive || u.membershipStatus === 'DISABLED'
+                            ? [{ label: t('admin.users.enable'), onClick: () => setConfirm({ user: u, action: 'enable' as const }) }]
+                            : []),
+                        ]}
+                      />
                     </td>
                   )}
                 </tr>

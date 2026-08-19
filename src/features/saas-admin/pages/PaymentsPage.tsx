@@ -8,6 +8,7 @@ import { isApiError } from '../../../api/client';
 import { formatAmount, formatDate } from '../../../lib/format';
 import type { Payment } from '../../../api/types';
 import { Button, Card, ConfirmDialog, EmptyState, PageHeader, Pagination, PaymentStatusBadge, Select, TableSkeleton, useToast } from '../../../components/ui';
+import { ActionMenu } from '../../../components/admin';
 import { PaymentDrawer } from '../components/drawers';
 import { canAccessSection, hasPerm } from '../AdminLayout';
 import { useSessionData } from '../../../hooks/useSession';
@@ -19,7 +20,7 @@ export function PaymentsPage() {
   const role = session?.user.platformRole ?? null;
   const canWrite = hasPerm(role, 'saas.payment.write');
 
-  const [filters, setFilters] = useState<Record<string, string>>({ status: 'ALL', method: 'ALL', currency: 'ALL', customerId: '', from: '', to: '' });
+  const [filters, setFilters] = useState<Record<string, string>>({ status: 'ALL', method: 'ALL', currency: 'ALL', customerId: '', from: '', to: '', search: '' });
   const [page, setPage] = useState(1);
   const [recordOpen, setRecordOpen] = useState(false);
   const [confirm, setConfirm] = useState<{ payment: Payment; kind: 'void' | 'refund' } | null>(null);
@@ -115,10 +116,12 @@ export function PaymentsPage() {
                   <td className="muted text-sm">{p.recordedBy}</td>
                   {canWrite && (
                     <td>
-                      <div className="flex" style={{ gap: 4 }}>
-                        {(p.status === 'PAID' || p.status === 'PENDING') && <Button size="sm" variant="ghost" onClick={() => setConfirm({ payment: p, kind: 'void' })}>{t('admin.payments.void')}</Button>}
-                        {p.status === 'PAID' && <Button size="sm" variant="ghost" onClick={() => setConfirm({ payment: p, kind: 'refund' })}>{t('admin.payments.refund')}</Button>}
-                      </div>
+                      <ActionMenu
+                        items={[
+                          ...((p.status === 'PAID' || p.status === 'PENDING') ? [{ label: t('admin.payments.void'), onClick: () => setConfirm({ payment: p, kind: 'void' as const }), danger: true }] : []),
+                          ...(p.status === 'PAID' ? [{ label: t('admin.payments.refund'), onClick: () => setConfirm({ payment: p, kind: 'refund' as const }), danger: true }] : []),
+                        ]}
+                      />
                     </td>
                   )}
                 </tr>

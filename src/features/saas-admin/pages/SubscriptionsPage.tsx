@@ -7,8 +7,10 @@ import { queryKeys, invalidateCustomer } from '../../../lib/queryKeys';
 import { isApiError } from '../../../api/client';
 import { formatAmount, formatDate } from '../../../lib/format';
 import type { Subscription } from '../../../api/types';
-import { Button, Card, ConfirmDialog, EmptyState, ExpiryBadge, PageHeader, Pagination, Select, SubscriptionStatusBadge, TableSkeleton, useToast } from '../../../components/ui';
+import { Button, Card, ConfirmDialog, EmptyState, ExpiryBadge, Field, PageHeader, Pagination, SearchInput, Select, SubscriptionStatusBadge, TableSkeleton, useToast } from '../../../components/ui';
+import { FilterSheet } from '../components/chrome';
 import { ChangePlanDrawer, ChangePriceDrawer, ExtendDrawer, RenewDrawer } from '../components/drawers';
+import { SlidersHorizontal } from 'lucide-react';
 import { canAccessSection, canManageSubscription, hasPerm } from '../AdminLayout';
 import { useSessionData } from '../../../hooks/useSession';
 import { Navigate } from 'react-router-dom';
@@ -23,6 +25,8 @@ export function SubscriptionsPage() {
   const canManage = canManageSubscription(role);
 
   const [status, setStatus] = useState('ALL');
+  const [search, setSearch] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [action, setAction] = useState<{ sub: Subscription; type: DrawerType } | null>(null);
@@ -32,8 +36,8 @@ export function SubscriptionsPage() {
   const qc = useQueryClient();
 
   const q = useQuery({
-    queryKey: queryKeys.saasAdmin.subscriptions({ status, page, pageSize }),
-    queryFn: () => saasAdminApi.getSubscriptions({ status, page, pageSize }),
+    queryKey: queryKeys.saasAdmin.subscriptions({ status, search, page, pageSize }),
+    queryFn: () => saasAdminApi.getSubscriptions({ status, search, page, pageSize }),
     placeholderData: (prev) => prev,
   });
 
@@ -62,15 +66,25 @@ export function SubscriptionsPage() {
     <>
       <PageHeader eyebrow={`${t('admin.eyebrow')} · ${t('admin.nav.subscriptions')}`} title={t('admin.subscriptions.title')} subtitle={t('admin.subscriptions.subtitle')} />
       <Card>
-        <div className="table-tools">
-          <Select value={status} onChange={(e) => setStatus(e.target.value)} aria-label={t('admin.subscriptions.filter_status')} style={{ width: 'auto' }}>
-            <option value="ALL">{t('admin.subscriptions.filter_status')}: {t('all')}</option>
-            <option value="CURRENT">{t('admin.subscriptions.filter_current')}</option>
-            {(['TRIAL', 'ACTIVE', 'PAST_DUE', 'EXPIRED', 'SUSPENDED', 'CANCELLED'] as const).map((s) => (
-              <option key={s} value={s}>{t(`admin.subscription_status.${s}`)}</option>
-            ))}
-          </Select>
+        <div className="sa-toolbar">
+          <div className="grow">
+            <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder={t('admin.subscriptions.search')} />
+          </div>
+          <Button size="sm" onClick={() => setFilterOpen(true)}>
+            <SlidersHorizontal size={14} /> {t('admin.customers.filters')}
+          </Button>
         </div>
+        <FilterSheet open={filterOpen} onClose={() => setFilterOpen(false)} title={t('admin.customers.filters')} onReset={() => setStatus('ALL')}>
+          <Field label={t('admin.subscriptions.filter_status')}>
+            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="ALL">{t('all')}</option>
+              <option value="CURRENT">{t('admin.subscriptions.filter_current')}</option>
+              {(['TRIAL', 'ACTIVE', 'PAST_DUE', 'EXPIRED', 'SUSPENDED', 'CANCELLED'] as const).map((s) => (
+                <option key={s} value={s}>{t(`admin.subscription_status.${s}`)}</option>
+              ))}
+            </Select>
+          </Field>
+        </FilterSheet>
         <div className="table-wrap">
           <table className="data-table">
             <thead>
@@ -91,7 +105,7 @@ export function SubscriptionsPage() {
               {q.data?.items.map((s) => (
                 <tr key={s.id}>
                   <td>
-                    <Link to={`/saas-admin/customers/${s.customerId}`} className="strong">{s.customerName}</Link>
+                    <Link to={`/saas-admin/subscriptions/${s.id}`} className="strong">{s.customerName}</Link>
                     <div className="muted text-xs">{s.customerCode}</div>
                   </td>
                   <td><span className="strong">{s.planName}</span><div className="muted text-xs">{s.planCode}</div></td>
