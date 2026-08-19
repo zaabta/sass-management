@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { saasAdminApi } from '../../../api/services';
 import { queryKeys } from '../../../lib/queryKeys';
-import { Badge, Card, CardSkeleton, EmptyState, Eyebrow, HealthGauge, PageHeader, StatCard } from '../../../components/ui';
+import { Badge, Card, EmptyState, Eyebrow, HealthGauge } from '../../../components/ui';
+import { AdminMetricCard, AdminMetricSkeleton, AdminPageHeader } from '../../../components/admin';
 import { formatAmount, formatDateTime } from '../../../lib/format';
 import { canAccessSection } from '../AdminLayout';
 import { useSessionData } from '../../../hooks/useSession';
@@ -19,15 +20,15 @@ export function OverviewPage() {
   if (q.isLoading) {
     return (
       <>
-        <PageHeader title={t('admin.overview.title')} subtitle={t('admin.overview.subtitle')} />
-        <CardSkeleton count={8} />
+        <AdminPageHeader title={t('admin.overview.title')} description={t('admin.overview.subtitle')} />
+        <AdminMetricSkeleton count={6} />
       </>
     );
   }
   if (q.isError || !q.data) {
     return (
       <>
-        <PageHeader title={t('admin.overview.title')} subtitle={t('admin.overview.subtitle')} />
+        <AdminPageHeader title={t('admin.overview.title')} description={t('admin.overview.subtitle')} />
         <Card>
           <EmptyState icon="⚠️">{t('errors.internal')}</EmptyState>
         </Card>
@@ -65,28 +66,28 @@ export function OverviewPage() {
           <div className="page-sub">{t('admin.overview.subtitle')}</div>
         </div>
       </div>
-      <div className="stat-grid mb-4">
-        <StatCard label={t('admin.overview.total_customers')} value={customers.total} tone="var(--vcfo-blue-600)" />
-        <StatCard label={t('admin.overview.active_customers')} value={customers.active} tone="var(--green)" />
-        <StatCard label={t('admin.overview.suspended_customers')} value={customers.suspended} tone="var(--amber)" />
-        <StatCard label={t('admin.overview.cancelled_customers')} value={customers.cancelled} tone="var(--gray)" />
+      <div className="admin-metric-grid mb-4">
+        <AdminMetricCard label={t('admin.overview.total_customers')} value={ customers.total } delta={ undefined } foot={ undefined } />
+        <AdminMetricCard label={t('admin.overview.active_customers')} value={ customers.active } delta={ undefined } foot={ undefined } />
+        <AdminMetricCard label={t('admin.overview.suspended_customers')} value={ customers.suspended } delta={ undefined } foot={ undefined } />
+        <AdminMetricCard label={t('admin.overview.cancelled_customers')} value={ customers.cancelled } delta={ undefined } foot={ undefined } />
       </div>
-      <div className="stat-grid mb-4">
-        <StatCard label={t('admin.overview.trial_subscriptions')} value={subscriptions.trial} tone="var(--vcfo-blue-500)" />
-        <StatCard label={t('admin.overview.active_subscriptions')} value={subscriptions.active} tone="var(--green)" />
-        <StatCard label={t('admin.overview.past_due')} value={subscriptions.pastDue} tone="var(--amber)" />
-        <StatCard label={t('admin.overview.expired')} value={subscriptions.expired} tone="var(--red)" />
+      <div className="admin-metric-grid mb-4">
+        <AdminMetricCard label={t('admin.overview.trial_subscriptions')} value={ subscriptions.trial } delta={ undefined } foot={ undefined } />
+        <AdminMetricCard label={t('admin.overview.active_subscriptions')} value={ subscriptions.active } delta={ undefined } foot={ undefined } />
+        <AdminMetricCard label={t('admin.overview.past_due')} value={ subscriptions.pastDue } delta={ undefined } foot={ undefined } />
+        <AdminMetricCard label={t('admin.overview.expired')} value={ subscriptions.expired } delta={ undefined } foot={ undefined } />
       </div>
-      <div className="stat-grid mb-4">
-        <StatCard label={t('admin.overview.expiring_7')} value={expiring.in7Days} tone="var(--amber)" foot={<Link to="/saas-admin/customers?expiry=EXPIRING_7">{t('admin.overview.view_all')}</Link>} />
-        <StatCard label={t('admin.overview.expiring_30')} value={expiring.in30Days} tone="var(--amber)" foot={<Link to="/saas-admin/customers?expiry=EXPIRING_30">{t('admin.overview.view_all')}</Link>} />
-        <StatCard label={t('admin.overview.payments_month')} value={formatAmount(payments.thisMonth, 'USD', i18n.language)} tone="var(--green)" />
-        <StatCard label={t('admin.overview.payments_year')} value={formatAmount(payments.thisYear, 'USD', i18n.language)} tone="var(--green)" />
+      <div className="admin-metric-grid mb-4">
+        <AdminMetricCard label={t('admin.overview.expiring_7')} value={expiring.in7Days} foot={<Link to="/saas-admin/customers?expiry=EXPIRING_7">{t('admin.overview.view_all')}</Link>} />
+        <AdminMetricCard label={t('admin.overview.expiring_30')} value={expiring.in30Days} foot={<Link to="/saas-admin/customers?expiry=EXPIRING_30">{t('admin.overview.view_all')}</Link>} />
+        <AdminMetricCard label={t('admin.overview.payments_month')} value={ formatAmount(payments.thisMonth, 'USD', i18n.language) } delta={ undefined } foot={ undefined } />
+        <AdminMetricCard label={t('admin.overview.payments_year')} value={ formatAmount(payments.thisYear, 'USD', i18n.language) } delta={ undefined } foot={ undefined } />
       </div>
       {d.mrr != null && (
-        <div className="stat-grid mb-4">
-          <StatCard label={t('admin.overview.mrr')} value={formatAmount(d.mrr, 'USD', i18n.language)} tone="var(--vcfo-blue-600)" foot={t('admin.overview.subtitle')} />
-          <StatCard label={t('admin.overview.arr')} value={formatAmount(d.arr, 'USD', i18n.language)} tone="var(--vcfo-blue-600)" foot={t('admin.overview.subtitle')} />
+        <div className="admin-metric-grid mb-4">
+          <AdminMetricCard label={t('admin.overview.mrr')} value={ formatAmount(d.mrr, 'USD', i18n.language) } delta={ undefined } foot={ t('admin.overview.subtitle') } />
+          <AdminMetricCard label={t('admin.overview.arr')} value={ formatAmount(d.arr, 'USD', i18n.language) } delta={ undefined } foot={ t('admin.overview.subtitle') } />
         </div>
       )}
       <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>

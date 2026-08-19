@@ -83,6 +83,14 @@ export function canManageSubscription(role: PlatformRole | null | undefined): bo
   return hasPerm(role, 'saas.subscription.write') && role !== 'BILLING_ADMIN';
 }
 
+/** Grouped sidebar navigation (Operations / Configuration / Access / System). */
+const NAV_GROUPS: { labelKey: string; sections: SectionKey[] }[] = [
+  { labelKey: 'nav.group_operations', sections: ['overview', 'customers', 'subscriptions', 'payments'] },
+  { labelKey: 'nav.group_configuration', sections: ['plans', 'features'] },
+  { labelKey: 'nav.group_access', sections: ['users'] },
+  { labelKey: 'nav.group_system', sections: ['platform-users', 'audit'] },
+];
+
 const SECTION_ICONS: Record<SectionKey, React.ReactNode> = {
   overview: (
     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
@@ -200,13 +208,21 @@ export function AdminLayout() {
           </button>
         </div>
         <nav className="sidebar-nav" aria-label="admin navigation">
-          {!collapsed && <div className="nav-section-label">{t('admin.title')}</div>}
-          {sections.map((k) => (
-            <NavLink key={k} to={`/saas-admin/${k === 'overview' ? 'overview' : k}`} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} title={collapsed ? sectionLabel(k) : undefined}>
-              <span className="nav-icon">{SECTION_ICONS[k]}</span>
-              {!collapsed && sectionLabel(k)}
-            </NavLink>
-          ))}
+          {NAV_GROUPS.map((group) => {
+            const visible = group.sections.filter((s) => sections.includes(s));
+            if (visible.length === 0) return null;
+            return (
+              <div key={group.labelKey}>
+                {!collapsed && <div className="nav-section-label">{t(group.labelKey)}</div>}
+                {visible.map((k) => (
+                  <NavLink key={k} to={`/saas-admin/${k === 'overview' ? 'overview' : k}`} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} title={collapsed ? sectionLabel(k) : undefined}>
+                    <span className="nav-icon">{SECTION_ICONS[k]}</span>
+                    {!collapsed && sectionLabel(k)}
+                  </NavLink>
+                ))}
+              </div>
+            );
+          })}
           {!collapsed && <div className="nav-section-label">VCFO</div>}
           <NavLink to="/dashboard" className="nav-link" title={collapsed ? t('admin.nav.back_to_customer_app') : undefined}>
             <span className="nav-icon">

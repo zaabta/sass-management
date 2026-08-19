@@ -7,7 +7,8 @@ import { queryKeys, invalidateCustomer } from '../../../lib/queryKeys';
 import { isApiError } from '../../../api/client';
 import { formatAmount, formatDate } from '../../../lib/format';
 import type { Customer, CustomerFilters, Subscription } from '../../../api/types';
-import { Button, Card, ConfirmDialog, CustomerStatusBadge, EmptyState, ExpiryBadge, PageHeader, Pagination, SearchInput, Select, SubscriptionStatusBadge, TableSkeleton, useToast } from '../../../components/ui';
+import { Button, Card, ConfirmDialog, CustomerStatusBadge, EmptyState, ExpiryBadge, SearchInput, Select, SubscriptionStatusBadge, TableSkeleton, useToast } from '../../../components/ui';
+import { ActionMenu, AdminPageHeader, AdminPagination } from '../../../components/admin';
 import { TableBody, TableCell, TableHead, TableHeader, TableHeaderGroup, TableProvider, TableRow } from '../../../components/kibo/table';
 import type { ColumnDef } from '../../../components/kibo/table';
 import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon, ChevronsUpDownIcon } from 'lucide-react';
@@ -327,7 +328,11 @@ export function CustomersPage() {
           {
             id: 'actions',
             header: () => <div className="text-right">{t('admin.customers.actions')}</div>,
-            cell: ({ row }: { row: { original: Customer } }) => <div className="flex justify-end"><RowMenu items={rowActions(row.original)} /></div>,
+            cell: ({ row }: { row: { original: Customer } }) => (
+              <div className="flex justify-end">
+                <ActionMenu items={rowActions(row.original)} label={t('admin.customers.row_actions')} />
+              </div>
+            ),
           },
         ]
       : []),
@@ -335,10 +340,9 @@ export function CustomersPage() {
 
   return (
     <>
-      <PageHeader
+      <AdminPageHeader
         title={t('admin.customers.title')}
-        eyebrow={`${t('admin.eyebrow')} · ${t('admin.nav.customers')}`}
-        subtitle={t('admin.customers.subtitle')}
+        description={t('admin.customers.subtitle')}
         actions={
           canWrite ? (
             <Button variant="primary" onClick={() => navigate('/saas-admin/customers/create')}>
@@ -451,7 +455,7 @@ export function CustomersPage() {
         )}
 
         {q.data && (
-          <Pagination
+          <AdminPagination
             page={page}
             pageSize={pageSize}
             total={total}
@@ -503,36 +507,5 @@ export function CustomersPage() {
         loading={customerMutation.isPending}
       />
     </>
-  );
-}
-
-function RowMenu({ items }: { items: { label: string; onClick: () => void; danger?: boolean }[] }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div style={{ position: 'relative' }}>
-      <Button size="sm" variant="ghost" onClick={() => setOpen((o) => !o)} aria-haspopup="menu">
-        ⋯
-      </Button>
-      {open && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setOpen(false)} />
-          <div className="card" style={{ position: 'absolute', insetInlineEnd: 0, top: '100%', zIndex: 50, minWidth: 190, padding: 5 }}>
-            {items.map((it) => (
-              <button
-                key={it.label}
-                className="btn btn-ghost"
-                style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 6, border: 'none', color: it.danger ? 'var(--red)' : undefined }}
-                onClick={() => {
-                  setOpen(false);
-                  it.onClick();
-                }}
-              >
-                {it.label}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
   );
 }

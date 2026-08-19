@@ -50,7 +50,7 @@ export default {
     monthly: 'شهري',
     custom: 'مخصص',
   },
-  table: { loading: 'جارٍ التحميل…', page: 'صفحة', of: 'من', per_page: 'لكل صفحة', results: '{{count}} نتيجة', results_one: '{{count}} نتيجة' },
+  table: { loading: 'جارٍ التحميل…', page: 'صفحة', of: 'من', per_page: 'لكل صفحة', results: '{{count}} نتيجة', results_one: '{{count}} نتيجة', showing: 'عرض {{from}}–{{to}} من {{total}}' },
   errors: {
     validation: 'بعض الحقول غير صالحة. يرجى مراجعة النموذج.',
     unauthorized: 'انتهت جلستك. يرجى تسجيل الدخول مرة أخرى.',
@@ -374,6 +374,10 @@ export default {
       platform_users: 'مستخدمو المنصة',
       audit: 'التدقيق',
       back_to_customer_app: 'تطبيق العميل',
+      group_operations: 'العمليات',
+      group_configuration: 'الإعدادات',
+      group_access: 'الوصول',
+      group_system: 'النظام',
     },
     roles: {
       SUPER_ADMIN: 'مسؤول فائق',

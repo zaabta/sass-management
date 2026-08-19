@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { saasAdminApi } from '../../../api/services';
@@ -8,9 +8,10 @@ import { isApiError } from '../../../api/client';
 import { formatAmount, formatDate, formatDateTime } from '../../../lib/format';
 import type { Customer, CustomerUser, Payment, ResolvedFeatureRow, Subscription, SubscriptionEvent, UsageReport, Company, AuditEvent } from '../../../api/types';
 import {
-  Alert, Badge, Button, Card, ConfirmDialog, CustomerStatusBadge, Drawer, EmptyState, ExpiryBadge, Eyebrow, Field, Input, MembershipStatusBadge,
-  PageHeader, PaymentStatusBadge, SubscriptionStatusBadge, TableSkeleton, Tabs, UsageBar, useToast, KV, CardSkeleton,
+  Alert, Badge, Button, Card, ConfirmDialog, CustomerStatusBadge, Drawer, EmptyState, ExpiryBadge, Field, Input, MembershipStatusBadge,
+  PaymentStatusBadge, SubscriptionStatusBadge, TableSkeleton, Tabs, UsageBar, useToast, KV, CardSkeleton,
 } from '../../../components/ui';
+import { AdminPageHeader, StatusBadge } from '../../../components/admin';
 import { ChangePlanDrawer, ChangePriceDrawer, CompanyDrawer, CreateSubscriptionDrawer, ExtendDrawer, OverrideDrawer, PaymentDrawer, RenewDrawer, UserDrawer } from '../components/drawers';
 import { canAccessSection, hasPerm } from '../AdminLayout';
 import { useSessionData } from '../../../hooks/useSession';
@@ -161,7 +162,7 @@ export function CustomerDetailPage() {
   if (customerQ.isLoading) {
     return (
       <>
-        <PageHeader eyebrow={`${t('admin.eyebrow')} · ${t('admin.customers.title')}`} title={t('admin.customer_detail.title')} />
+        <AdminPageHeader title={t('admin.customer_detail.title')} />
         <CardSkeleton count={3} />
       </>
     );
@@ -169,7 +170,7 @@ export function CustomerDetailPage() {
   if (!c) {
     return (
       <>
-        <PageHeader eyebrow={`${t('admin.eyebrow')} · ${t('admin.customers.title')}`} title={t('admin.customer_detail.title')} />
+        <AdminPageHeader title={t('admin.customer_detail.title')} />
         <Card><EmptyState icon="🏢">{t('errors.not_found')}</EmptyState></Card>
       </>
     );
@@ -192,18 +193,19 @@ export function CustomerDetailPage() {
 
   return (
     <>
-      <div className="page-header">
-        <div>
-          <div className="page-sub mb-2" style={{ marginTop: 0 }}>
-            <Link to="/saas-admin/customers"><span className="flip-rtl" aria-hidden="true">←</span> {t('admin.customers.title')}</Link>
-          </div>
-          <Eyebrow>{t('admin.eyebrow')} · {t('admin.customers.title')}</Eyebrow>
-          <h1>{c.name}</h1>
-          <div className="page-sub">
-            {t('admin.customer_detail.code')}: <strong>{c.code}</strong> · {c.email}
-          </div>
-        </div>
-        <div className="page-actions">
+      <AdminPageHeader
+        title={c.name}
+        breadcrumbs={[{ label: t('admin.customers.title'), to: '/saas-admin/customers' }, { label: c.code }]}
+        meta={
+          <span className="flex" style={{ gap: 10, flexWrap: 'wrap' }}>
+            <StatusBadge status={c.status} dot>{t(`admin.customer_status.${c.status}`)}</StatusBadge>
+            {c.planCode && <span className="admin-status-badge badge-navy">{c.planCode}</span>}
+            {c.subscriptionStatus && <StatusBadge status={c.subscriptionStatus}>{t(`admin.subscription_status.${c.subscriptionStatus}`)}</StatusBadge>}
+            <span>{c.email}</span>
+          </span>
+        }
+        actions={
+          <>
           {canWriteCustomers && (
             <>
               {c.status === 'ACTIVE' && <Button variant="default" onClick={() => setConfirm({ kind: 'suspend_customer' })}>{t('admin.customers.suspend')}</Button>}
@@ -213,8 +215,9 @@ export function CustomerDetailPage() {
             </>
           )}
           {!sub && canWriteSubs && <Button variant="primary" onClick={() => open('create-subscription')}>{t('admin.customer_detail.subscription.create_cta')}</Button>}
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="stat-grid mb-4">
         <Card pad>

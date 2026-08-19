@@ -60,6 +60,7 @@ export default {
     per_page: 'Per page',
     results: '{{count}} results',
     results_one: '{{count}} result',
+    showing: 'Showing {{from}}–{{to}} of {{total}}',
   },
   errors: {
     validation: 'Some fields are invalid. Please review the form.',
@@ -408,6 +409,10 @@ export default {
       platform_users: 'Platform Users',
       audit: 'Audit',
       back_to_customer_app: 'Customer application',
+      group_operations: 'Operations',
+      group_configuration: 'Configuration',
+      group_access: 'Access',
+      group_system: 'System',
     },
     roles: {
       SUPER_ADMIN: 'Super Admin',
