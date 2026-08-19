@@ -1,7 +1,28 @@
-import { useMemo, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  Activity,
+  Bell,
+  Building2,
+  CreditCard,
+  Cpu,
+  FileText,
+  Gauge,
+  GitBranch,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  PanelLeft,
+  Receipt,
+  Search,
+  Settings,
+  Shield,
+  Sparkles,
+  Users,
+  Wallet,
+} from 'lucide-react';
 import { saasAdminApi, authApi } from '../../api/services';
 import { queryKeys } from '../../lib/queryKeys';
 import { useSessionData } from '../../hooks/useSession';
@@ -9,9 +30,28 @@ import { setToken, getRefreshToken } from '../../api/client';
 import type { PlatformRole } from '../../api/types';
 import { LanguageSwitcher, RoleBadge } from '../../components/ui';
 import { ThemeSwitcher } from '../../components/kibo/theme-switcher';
-import { useQueryClient } from '@tanstack/react-query';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../../components/ui/shadcn/dropdown-menu';
+import { AdminAvatar, CommandPalette } from './components/chrome';
+import { cn } from '../../lib/utils';
 
-type SectionKey = 'overview' | 'customers' | 'subscriptions' | 'plans' | 'features' | 'payments' | 'users' | 'platform-users' | 'audit';
+export type SectionKey =
+  | 'overview'
+  | 'customers'
+  | 'companies'
+  | 'branches'
+  | 'subscriptions'
+  | 'plans'
+  | 'features'
+  | 'payments'
+  | 'invoices'
+  | 'users'
+  | 'platform-users'
+  | 'audit'
+  | 'activity'
+  | 'usage'
+  | 'ai-usage'
+  | 'health'
+  | 'settings';
 
 type SaasPerm =
   | 'saas.overview.read'
@@ -43,12 +83,12 @@ const ROLE_PERMS: Record<PlatformRole, SaasPerm[]> = {
     'saas.overview.read', 'saas.customer.read', 'saas.customer.write',
     'saas.subscription.read', 'saas.subscription.write',
     'saas.plan.read', 'saas.plan.write', 'saas.feature.read', 'saas.feature.write',
-    'saas.payment.read', // read-only — no record/void
+    'saas.payment.read',
     'saas.user.read', 'saas.user.write', 'saas.audit.read',
   ],
   BILLING_ADMIN: [
     'saas.overview.read', 'saas.customer.read',
-    'saas.subscription.read', 'saas.subscription.write', // activate/renew/extend only
+    'saas.subscription.read', 'saas.subscription.write',
     'saas.payment.read', 'saas.payment.write',
   ],
   SUPPORT: ['saas.overview.read', 'saas.customer.read', 'saas.subscription.read', 'saas.user.read', 'saas.audit.read'],
@@ -62,95 +102,78 @@ export function hasPerm(role: PlatformRole | null | undefined, perm: SaasPerm): 
 const SECTION_PERM: Record<SectionKey, SaasPerm> = {
   overview: 'saas.overview.read',
   customers: 'saas.customer.read',
+  companies: 'saas.customer.read',
+  branches: 'saas.customer.read',
   subscriptions: 'saas.subscription.read',
   plans: 'saas.plan.read',
   features: 'saas.feature.read',
   payments: 'saas.payment.read',
+  invoices: 'saas.payment.read',
   users: 'saas.user.read',
   'platform-users': 'saas.platform-user.write',
   audit: 'saas.audit.read',
+  activity: 'saas.audit.read',
+  usage: 'saas.overview.read',
+  'ai-usage': 'saas.overview.read',
+  health: 'saas.overview.read',
+  settings: 'saas.overview.read',
 };
 
 export function canAccessSection(role: PlatformRole | null | undefined, section: SectionKey): boolean {
   return hasPerm(role, SECTION_PERM[section]);
 }
 
-/**
- * Destructive subscription ops (suspend/cancel/change-plan/change-price) are
- * SUPER_ADMIN + SAAS_ADMIN only; BILLING_ADMIN gets activate/renew/extend.
- */
 export function canManageSubscription(role: PlatformRole | null | undefined): boolean {
   return hasPerm(role, 'saas.subscription.write') && role !== 'BILLING_ADMIN';
 }
 
-/** Grouped sidebar navigation (Operations / Configuration / Access / System). */
 const NAV_GROUPS: { labelKey: string; sections: SectionKey[] }[] = [
-  { labelKey: 'nav.group_operations', sections: ['overview', 'customers', 'subscriptions', 'payments'] },
-  { labelKey: 'nav.group_configuration', sections: ['plans', 'features'] },
-  { labelKey: 'nav.group_access', sections: ['users'] },
-  { labelKey: 'nav.group_system', sections: ['platform-users', 'audit'] },
+  { labelKey: 'admin.nav.group_overview', sections: ['overview'] },
+  { labelKey: 'admin.nav.group_platform', sections: ['users', 'companies', 'branches'] },
+  { labelKey: 'admin.nav.group_billing', sections: ['subscriptions', 'plans', 'payments', 'invoices'] },
+  { labelKey: 'admin.nav.group_usage', sections: ['usage', 'ai-usage'] },
+  { labelKey: 'admin.nav.group_monitoring', sections: ['activity', 'audit', 'health'] },
+  { labelKey: 'admin.nav.group_settings', sections: ['features', 'platform-users', 'settings'] },
 ];
 
-const SECTION_ICONS: Record<SectionKey, React.ReactNode> = {
-  overview: (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.5" />
-      <rect x="11" y="2.5" width="6.5" height="6.5" rx="1.5" />
-      <rect x="2.5" y="11" width="6.5" height="6.5" rx="1.5" />
-      <rect x="11" y="11" width="6.5" height="6.5" rx="1.5" />
-    </svg>
-  ),
-  customers: (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <circle cx="7" cy="7" r="3" />
-      <path d="M2.5 17c0-2.8 2-4.5 4.5-4.5s4.5 1.7 4.5 4.5" strokeLinecap="round" />
-      <path d="M13 4.5a3 3 0 0 1 0 5M14.5 12.9c1.6.6 2.8 1.9 3 4.1" strokeLinecap="round" />
-    </svg>
-  ),
-  subscriptions: (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <path d="M4 6.5h12M4 6.5a2.5 2.5 0 0 1 2.5-2.5h7A2.5 2.5 0 0 1 16 6.5M4 6.5V14a2.5 2.5 0 0 0 2.5 2.5h7A2.5 2.5 0 0 0 16 14V6.5" strokeLinecap="round" />
-      <path d="M10 3v4M8.5 11h3" strokeLinecap="round" />
-    </svg>
-  ),
-  plans: (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <path d="M3 4h14v12H3z" />
-      <path d="M3 8h14M8 8v8" strokeLinecap="round" />
-    </svg>
-  ),
-  features: (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <path d="m10 2.5 1.8 4.2 4.5.5-3.4 3 1 4.5L10 12.4l-3.9 2.3 1-4.5-3.4-3 4.5-.5z" strokeLinejoin="round" />
-    </svg>
-  ),
-  payments: (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <rect x="2.5" y="5" width="15" height="11" rx="1.5" />
-      <path d="M2.5 8.5h15M5.5 13h4" strokeLinecap="round" />
-    </svg>
-  ),
-  users: (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <circle cx="8" cy="6.5" r="2.8" />
-      <circle cx="14" cy="7" r="2" />
-      <path d="M2.5 16.5c0-2.6 2.4-4.2 5.5-4.2s5.5 1.6 5.5 4.2" strokeLinecap="round" />
-      <path d="M13 14.7c1.5.3 2.6 1.1 3.2 2.3" strokeLinecap="round" />
-    </svg>
-  ),
-  'platform-users': (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <rect x="2.5" y="4" width="15" height="12" rx="1.5" />
-      <circle cx="10" cy="9" r="2.2" />
-      <path d="M6.5 14.5c.6-1.6 1.9-2.4 3.5-2.4s2.9.8 3.5 2.4" strokeLinecap="round" />
-    </svg>
-  ),
-  audit: (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <path d="M4 2.5h12V17l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2-2 1.2z" strokeLinejoin="round" />
-      <path d="M7 7h6M7 10h6M7 13h3" strokeLinecap="round" />
-    </svg>
-  ),
+const SECTION_PATH: Record<SectionKey, string> = {
+  overview: '/saas-admin/overview',
+  customers: '/saas-admin/customers',
+  companies: '/saas-admin/companies',
+  branches: '/saas-admin/branches',
+  subscriptions: '/saas-admin/subscriptions',
+  plans: '/saas-admin/plans',
+  features: '/saas-admin/features',
+  payments: '/saas-admin/payments',
+  invoices: '/saas-admin/invoices',
+  users: '/saas-admin/users',
+  'platform-users': '/saas-admin/platform-users',
+  audit: '/saas-admin/audit',
+  activity: '/saas-admin/activity',
+  usage: '/saas-admin/usage',
+  'ai-usage': '/saas-admin/ai-usage',
+  health: '/saas-admin/health',
+  settings: '/saas-admin/settings',
+};
+
+const SECTION_ICONS: Record<SectionKey, ReactNode> = {
+  overview: <LayoutDashboard size={16} />,
+  customers: <Building2 size={16} />,
+  companies: <Building2 size={16} />,
+  branches: <GitBranch size={16} />,
+  subscriptions: <FileText size={16} />,
+  plans: <Wallet size={16} />,
+  features: <Sparkles size={16} />,
+  payments: <CreditCard size={16} />,
+  invoices: <Receipt size={16} />,
+  users: <Users size={16} />,
+  'platform-users': <Shield size={16} />,
+  audit: <FileText size={16} />,
+  activity: <Activity size={16} />,
+  usage: <Gauge size={16} />,
+  'ai-usage': <Cpu size={16} />,
+  health: <Activity size={16} />,
+  settings: <Settings size={16} />,
 };
 
 export function AdminLayout() {
@@ -158,22 +181,38 @@ export function AdminLayout() {
   const session = useSessionData();
   const role = session?.user.platformRole ?? null;
   const navigate = useNavigate();
+  const location = useLocation();
   const qc = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
-  // Collapsible sidebar: icons-only when collapsed, expands on click.
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('vcfo.sidebar') === 'collapsed');
 
-  const sections: SectionKey[] = useMemo<SectionKey[]>(
+  const sections = useMemo<SectionKey[]>(
     () => (role ? (Object.keys(SECTION_PERM) as SectionKey[]).filter((k) => hasPerm(role, SECTION_PERM[k])) : []),
     [role],
   );
 
-  const searchQ = useQuery({
-    queryKey: queryKeys.saasAdmin.customers({ search, page: 1, pageSize: 6 }),
-    queryFn: () => saasAdminApi.getCustomers({ search, page: 1, pageSize: 6 }),
-    enabled: search.trim().length >= 2,
+  const overviewQ = useQuery({
+    queryKey: queryKeys.saasAdmin.overview,
+    queryFn: () => saasAdminApi.getOverview(),
+    staleTime: 60_000,
   });
+
+  const attention = (overviewQ.data?.subscriptions.pastDue ?? 0) + (overviewQ.data?.expiring.in7Days ?? 0);
+  const healthState = overviewQ.isError ? 'down' : attention > 0 ? 'warn' : 'ok';
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCmdOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => setMobileOpen(false), [location.pathname]);
 
   const logout = () => {
     void authApi.logout(getRefreshToken() ?? '').catch(() => undefined);
@@ -182,7 +221,28 @@ export function AdminLayout() {
     navigate('/login');
   };
 
-  const sectionLabel = (k: SectionKey) => t(`admin.nav.${k === 'platform-users' ? 'platform_users' : k}`);
+  const sectionLabel = (k: SectionKey) => {
+    const keyMap: Record<SectionKey, string> = {
+      overview: 'admin.nav.overview',
+      customers: 'admin.nav.customers',
+      companies: 'admin.nav.companies',
+      branches: 'admin.nav.branches',
+      subscriptions: 'admin.nav.subscriptions',
+      plans: 'admin.nav.plans',
+      features: 'admin.nav.features',
+      payments: 'admin.nav.payments',
+      invoices: 'admin.nav.invoices',
+      users: 'admin.nav.users',
+      'platform-users': 'admin.nav.platform_users',
+      audit: 'admin.nav.audit',
+      activity: 'admin.nav.activity',
+      usage: 'admin.nav.usage',
+      'ai-usage': 'admin.nav.ai_usage',
+      health: 'admin.nav.health',
+      settings: 'admin.nav.settings',
+    };
+    return t(keyMap[k]);
+  };
 
   const toggleSidebar = () => {
     setCollapsed((c) => {
@@ -192,19 +252,22 @@ export function AdminLayout() {
     });
   };
 
+  const displayName = [session?.user.firstName, session?.user.lastName].filter(Boolean).join(' ') || session?.user.email || 'Admin';
+
   return (
-    <div className="app-shell">
-      <aside className={`sidebar admin-sidebar ${collapsed ? 'collapsed' : ''}`}>
+    <div className="sa-shell">
+      {mobileOpen && <div className="sa-backdrop-sidebar" onClick={() => setMobileOpen(false)} />}
+      <aside className={cn('sidebar admin-sidebar', collapsed && 'collapsed', mobileOpen && 'open')}>
         <div className="sidebar-brand">
           <div className="logo-mark">V</div>
           {!collapsed && (
-            <div>
+            <div className="brand-copy">
               <div className="brand-name">VCFO</div>
-              <div className="brand-tag">{t('admin.title')}</div>
+              <div className="brand-tag">{t('admin.title_short')}</div>
             </div>
           )}
-          <button type="button" className="sidebar-toggle" onClick={toggleSidebar} aria-label="Toggle sidebar" title={collapsed ? 'Expand' : 'Collapse'}>
-            <span className="flip-rtl" aria-hidden>«</span>
+          <button type="button" className="sidebar-toggle sa-desktop-only" onClick={toggleSidebar} aria-label={t('admin.nav.toggle')} title={collapsed ? t('admin.nav.expand') : t('admin.nav.collapse')}>
+            <PanelLeft size={13} />
           </button>
         </div>
         <nav className="sidebar-nav" aria-label="admin navigation">
@@ -215,7 +278,12 @@ export function AdminLayout() {
               <div key={group.labelKey}>
                 {!collapsed && <div className="nav-section-label">{t(group.labelKey)}</div>}
                 {visible.map((k) => (
-                  <NavLink key={k} to={`/saas-admin/${k === 'overview' ? 'overview' : k}`} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} title={collapsed ? sectionLabel(k) : undefined}>
+                  <NavLink
+                    key={k}
+                    to={SECTION_PATH[k]}
+                    className={({ isActive }) => cn('nav-link', isActive && 'active')}
+                    title={collapsed ? sectionLabel(k) : undefined}
+                  >
                     <span className="nav-icon">{SECTION_ICONS[k]}</span>
                     {!collapsed && sectionLabel(k)}
                   </NavLink>
@@ -223,76 +291,87 @@ export function AdminLayout() {
               </div>
             );
           })}
-          {!collapsed && <div className="nav-section-label">VCFO</div>}
-          <NavLink to="/dashboard" className="nav-link" title={collapsed ? t('admin.nav.back_to_customer_app') : undefined}>
-            <span className="nav-icon">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-                <path d="M4 10l6-6 6 6M6 9v7h8V9" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-            {!collapsed && t('admin.nav.back_to_customer_app')}
-          </NavLink>
         </nav>
         <div className="sidebar-footer">
-          {!collapsed && <div style={{ marginBottom: 6 }}>{session?.user?.email}</div>}
+          {!collapsed && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              <AdminAvatar name={displayName} />
+              <div style={{ minWidth: 0 }}>
+                <div className="strong text-sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
+                <div className="muted text-xs" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{session?.user.email}</div>
+              </div>
+            </div>
+          )}
           {role && <RoleBadge role={role} platform />}
         </div>
       </aside>
-      <div className="main">
-        <header className="topbar">
-          <div className="input-icon-wrap" style={{ position: 'relative', width: 'min(380px, 40vw)' }}>
-            <svg className="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)', width: 15, height: 15, color: 'var(--text-muted)' }}>
-              <circle cx="9" cy="9" r="6" />
-              <path d="M13.5 13.5 17 17" strokeLinecap="round" />
-            </svg>
-            <input
-              className="input"
-              style={{ paddingInlineStart: 32 }}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setSearchOpen(true);
-              }}
-              onFocus={() => setSearchOpen(true)}
-              onBlur={() => window.setTimeout(() => setSearchOpen(false), 200)}
-              placeholder={t('admin.global_search')}
-              aria-label={t('admin.global_search')}
-            />
-            {searchOpen && search.trim().length >= 2 && (
-              <div className="card" style={{ position: 'absolute', top: 'calc(100% + 6px)', insetInlineStart: 0, insetInlineEnd: 0, zIndex: 60, maxHeight: 320, overflowY: 'auto' }}>
-                {searchQ.isLoading && <div className="card-body text-sm muted">{t('loading')}</div>}
-                {searchQ.data?.items?.length === 0 && <div className="card-body text-sm muted">{t('empty.customers')}</div>}
-                {searchQ.data?.items?.map((c) => (
-                  <button
-                    key={c.id}
-                    className="btn btn-ghost"
-                    style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, borderBottom: '1px solid var(--border)' }}
-                    onMouseDown={() => {
-                      setSearchOpen(false);
-                      setSearch('');
-                      navigate(`/saas-admin/customers/${c.id}`);
-                    }}
-                  >
-                    <span className="strong">{c.name}</span>
-                    <span className="muted text-xs">{c.code}</span>
-                    <span className="grow" />
-                    <span className="muted text-xs">{c.planCode ?? '—'}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+
+      <div className="sa-main">
+        <header className="sa-topbar">
+          <button type="button" className="sa-icon-btn sa-mobile-only" onClick={() => setMobileOpen(true)} aria-label={t('admin.nav.toggle')}>
+            <Menu size={16} />
+          </button>
+          <button type="button" className="sa-search-trigger" onClick={() => setCmdOpen(true)}>
+            <Search size={14} />
+            <span>{t('admin.command.placeholder')}</span>
+            <kbd>⌘K</kbd>
+          </button>
           <div className="topbar-spacer" />
+          <span className={cn('sa-status-pill', healthState === 'warn' && 'warn', healthState === 'down' && 'down')} title={t('admin.health.title')}>
+            <span className="dot" />
+            <span className="label">
+              {healthState === 'ok' && t('admin.health.healthy')}
+              {healthState === 'warn' && t('admin.health.attention')}
+              {healthState === 'down' && t('admin.health.degraded')}
+            </span>
+          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className={cn('sa-icon-btn', attention > 0 && 'has-dot')} aria-label={t('admin.nav.notifications')}>
+                <Bell size={15} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="sa-notify">
+              {attention === 0 && overviewQ.isSuccess && (
+                <div className="sa-notify-item muted text-sm">{t('admin.notifications.empty')}</div>
+              )}
+              {(overviewQ.data?.expiring.in7Days ?? 0) > 0 && (
+                <DropdownMenuItem onSelect={() => navigate('/saas-admin/customers?expiry=EXPIRING_7')}>
+                  {t('admin.notifications.expiring', { count: overviewQ.data?.expiring.in7Days })}
+                </DropdownMenuItem>
+              )}
+              {(overviewQ.data?.subscriptions.pastDue ?? 0) > 0 && (
+                <DropdownMenuItem onSelect={() => navigate('/saas-admin/subscriptions')}>
+                  {t('admin.notifications.past_due', { count: overviewQ.data?.subscriptions.pastDue })}
+                </DropdownMenuItem>
+              )}
+              {overviewQ.isError && (
+                <div className="sa-notify-item text-sm">{t('admin.notifications.health_down')}</div>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <ThemeSwitcher />
           <LanguageSwitcher compact />
-          <button className="btn btn-sm" onClick={logout}>
-            {t('actions.logout')}
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="sa-profile-btn" aria-label={t('admin.nav.profile')}>
+                <AdminAvatar name={displayName} />
+                <span className="who">{displayName}</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => navigate('/saas-admin/settings')}>{t('admin.nav.settings')}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={logout}>
+                <LogOut size={14} /> {t('actions.logout')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
-        <main className="content">
+        <main className="sa-content">
           <Outlet />
         </main>
       </div>
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
     </div>
   );
 }

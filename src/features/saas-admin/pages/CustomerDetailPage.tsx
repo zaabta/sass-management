@@ -12,6 +12,7 @@ import {
   PaymentStatusBadge, SubscriptionStatusBadge, TableSkeleton, Tabs, UsageBar, useToast, KV, CardSkeleton,
 } from '../../../components/ui';
 import { AdminPageHeader, StatusBadge } from '../../../components/admin';
+import { AdminAvatar } from '../components/chrome';
 import { ChangePlanDrawer, ChangePriceDrawer, CompanyDrawer, CreateSubscriptionDrawer, ExtendDrawer, OverrideDrawer, PaymentDrawer, RenewDrawer, UserDrawer } from '../components/drawers';
 import { canAccessSection, hasPerm } from '../AdminLayout';
 import { useSessionData } from '../../../hooks/useSession';
@@ -194,7 +195,12 @@ export function CustomerDetailPage() {
   return (
     <>
       <AdminPageHeader
-        title={c.name}
+        title={
+          <span className="flex" style={{ gap: 12 }}>
+            <AdminAvatar name={c.name} size="lg" />
+            <span>{c.name}</span>
+          </span>
+        }
         breadcrumbs={[{ label: t('admin.customers.title'), to: '/saas-admin/customers' }, { label: c.code }]}
         meta={
           <span className="flex" style={{ gap: 10, flexWrap: 'wrap' }}>

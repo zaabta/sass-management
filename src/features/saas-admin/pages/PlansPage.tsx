@@ -7,6 +7,7 @@ import { isApiError } from '../../../api/client';
 import { formatAmount } from '../../../lib/format';
 import type { Plan } from '../../../api/types';
 import { Alert, Badge, Button, Card, CardSkeleton, ConfirmDialog, Drawer, EmptyState, Field, Input, PageHeader, Select, Textarea, useToast } from '../../../components/ui';
+import { AdminPageHeader } from '../../../components/admin';
 import { canAccessSection, hasPerm } from '../AdminLayout';
 import { useSessionData } from '../../../hooks/useSession';
 import { Navigate } from 'react-router-dom';
@@ -38,7 +39,7 @@ export function PlansPage() {
   if (q.isLoading) {
     return (
       <>
-        <PageHeader eyebrow={`${t('admin.eyebrow')} · ${t('admin.nav.plans')}`} title={t('admin.plans.title')} subtitle={t('admin.plans.subtitle')} />
+        <AdminPageHeader title={t('admin.plans.title')} description={t('admin.plans.subtitle')} />
         <CardSkeleton count={4} />
       </>
     );
