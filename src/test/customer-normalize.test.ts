@@ -85,4 +85,19 @@ describe('real list payload: { data: { data: [...], meta } } with flat fields', 
     expect(c.agreedPrice).toBe(399);
     expect(c.lastPaymentAt).toBeNull();
   });
+
+  it('maps lastPayment object.paymentDate without crashing', () => {
+    const c = normalizeCustomer({
+      id: 'c5',
+      code: 'CUS-5',
+      name: 'Echo',
+      plan: 'BUSINESS',
+      companies: 1,
+      users: 1,
+      branches: 1,
+      lastPayment: { paymentDate: '2026-08-20T00:00:00.000Z', amount: '150', currency: 'USD', status: 'PAID' },
+    });
+    expect(c.lastPaymentAt).toBe('2026-08-20T00:00:00.000Z');
+    expect(c.planCode).toBe('BUSINESS');
+  });
 });

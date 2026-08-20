@@ -8,7 +8,8 @@ import { queryKeys } from '../../../lib/queryKeys';
 import { isApiError } from '../../../api/client';
 import { addDaysIso, formatAmount, formatDate, todayIso } from '../../../lib/format';
 import type { BillingCycle, CreateCustomerPayload } from '../../../api/types';
-import { Alert, Badge, Button, Card, Field, Input, PageHeader, Select, useToast } from '../../../components/ui';
+import { Alert, Badge, Button, Card, Field, Input, Select, useToast } from '../../../components/ui';
+import { AdminPageHeader } from '../../../components/admin';
 import { canAccessSection } from '../AdminLayout';
 import { useSessionData } from '../../../hooks/useSession';
 import { Navigate } from 'react-router-dom';
@@ -176,7 +177,12 @@ export function CreateCustomerPage() {
 
   return (
     <>
-      <PageHeader eyebrow={`${t('admin.eyebrow')} · ${t('admin.customers.title')}`} title={t('admin.wizard.title')} subtitle={t('admin.wizard.subtitle')} actions={<Button variant="ghost" onClick={() => navigate('/saas-admin/customers')}>{t('actions.cancel')}</Button>} />
+      <AdminPageHeader
+        title={t('admin.wizard.title')}
+        description={t('admin.wizard.subtitle')}
+        breadcrumbs={[{ label: t('admin.customers.title'), to: '/saas-admin/customers' }, { label: t('admin.wizard.title') }]}
+        actions={<Button variant="ghost" onClick={() => navigate('/saas-admin/customers')}>{t('actions.cancel')}</Button>}
+      />
 
       {/* Stepper: العميل 1 → الخطة 2 → … (arrows flip in RTL) */}
       <div className="wizard-steps" role="list" aria-label={t('admin.wizard.subtitle')}>

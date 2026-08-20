@@ -288,7 +288,7 @@ interface RawCustomer {
   agreedPrice?: number | string | null;
   currency?: string;
   lastPaymentAt?: string | null;
-  lastPayment?: string | null;
+  lastPayment?: string | { paymentDate?: string; amount?: number | string; currency?: string; status?: string } | null;
   createdAt?: string;
   lockVersion?: number;
   stats?: RawCustomerCounts;
@@ -327,7 +327,13 @@ export function normalizeCustomer(raw: RawCustomer): Customer {
     expiryDate: raw.expiryDate ?? null,
     agreedPrice: raw.agreedPrice != null && raw.agreedPrice !== '' ? Number(raw.agreedPrice) : null,
     currency: String(raw.currency ?? raw.defaultCurrency ?? 'USD'),
-    lastPaymentAt: raw.lastPaymentAt ?? raw.lastPayment ?? null,
+    lastPaymentAt:
+      raw.lastPaymentAt ??
+      (typeof raw.lastPayment === 'string'
+        ? raw.lastPayment
+        : raw.lastPayment && typeof raw.lastPayment === 'object'
+          ? raw.lastPayment.paymentDate ?? null
+          : null),
     createdAt: String(raw.createdAt ?? ''),
     lockVersion: raw.lockVersion,
     stats: {

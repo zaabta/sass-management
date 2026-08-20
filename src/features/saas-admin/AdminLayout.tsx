@@ -129,7 +129,7 @@ export function canManageSubscription(role: PlatformRole | null | undefined): bo
 
 const NAV_GROUPS: { labelKey: string; sections: SectionKey[] }[] = [
   { labelKey: 'admin.nav.group_overview', sections: ['overview'] },
-  { labelKey: 'admin.nav.group_platform', sections: ['users', 'companies', 'branches'] },
+  { labelKey: 'admin.nav.group_platform', sections: ['customers', 'companies', 'branches'] },
   { labelKey: 'admin.nav.group_billing', sections: ['subscriptions', 'plans', 'payments', 'invoices'] },
   { labelKey: 'admin.nav.group_usage', sections: ['usage', 'ai-usage'] },
   { labelKey: 'admin.nav.group_monitoring', sections: ['activity', 'audit', 'health'] },

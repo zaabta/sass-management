@@ -5,6 +5,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Globe } from 'lucide-react';
+import { currentLocale, setLocale } from '../../i18n';
 import type { CustomerStatus, MembershipStatus, PaymentStatus, PlatformRole, SubscriptionStatus } from '../../api/types';
 import { useLimit } from '../../hooks/useSession';
 import { diffDays, formatDate, todayIso } from '../../lib/format';
@@ -564,15 +566,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 // ---------------------------------------------------------------------------
 
 export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
-  const { t } = useTranslation();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const current = currentLocale(i18n.language);
+  const next = current === 'ar' ? 'en' : 'ar';
   return (
-    <Field label={compact ? undefined : t('language')} className={compact ? '' : undefined}>
-      <select className="select" style={compact ? { width: 'auto' } : undefined} value={i18n.language} onChange={(e) => import('../../i18n').then((m) => m.setLocale(e.target.value as never))} aria-label={t('language')}>
-        <option value="en">English</option>
-        <option value="ar">العربية</option>
-      </select>
-    </Field>
+    <button
+      type="button"
+      className={compact ? 'sa-lang-btn' : 'sa-lang-btn sa-lang-btn-lg'}
+      onClick={() => setLocale(next)}
+      aria-label={t('language')}
+      title={current === 'ar' ? 'English' : 'العربية'}
+    >
+      <Globe size={14} />
+      <span>{current === 'ar' ? 'AR' : 'EN'}</span>
+    </button>
   );
 }
 

@@ -48,7 +48,7 @@ function LocaleSync() {
   const { i18n } = useTranslation();
   const location = useLocation();
   useEffect(() => {
-    const dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+    const dir = (i18n.language || 'en').toLowerCase().startsWith('ar') ? 'rtl' : 'ltr';
     document.documentElement.lang = i18n.language;
     document.documentElement.dir = dir;
   }, [i18n.language, location]);

@@ -27,12 +27,17 @@ void i18n.use(initReactI18next).init({
   returnNull: false,
 });
 
+export function currentLocale(lang = i18n.language): LocaleCode {
+  return (lang || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
+}
+
 export function setLocale(code: LocaleCode) {
   void i18n.changeLanguage(code);
   localStorage.setItem('vcfo.locale', code);
   const dir = SUPPORTED_LOCALES.find((l) => l.code === code)?.dir ?? 'ltr';
   document.documentElement.lang = code;
   document.documentElement.dir = dir;
+  void loadRemoteCatalog(code);
 }
 
 /**
@@ -41,6 +46,7 @@ export function setLocale(code: LocaleCode) {
  * catalog `direction` (RTL for ar). Failures fall back to bundled copy.
  */
 export async function loadRemoteCatalog(lang = i18n.language): Promise<void> {
+  const code = currentLocale(lang);
   try {
     const langsRes = await fetch('/api/v1/i18n/languages');
     if (!langsRes.ok) return;
@@ -48,7 +54,7 @@ export async function loadRemoteCatalog(lang = i18n.language): Promise<void> {
     const languages: { code: string; direction: 'ltr' | 'rtl' }[] = langsEnvelope?.data ?? langsEnvelope;
     if (!Array.isArray(languages)) return;
 
-    const catRes = await fetch(`/api/v1/i18n/catalog?lang=${encodeURIComponent(lang)}`);
+    const catRes = await fetch(`/api/v1/i18n/catalog?lang=${encodeURIComponent(code)}`);
     if (!catRes.ok) return;
     const catEnvelope = await catRes.json();
     const catalog = (catEnvelope?.data ?? catEnvelope) as { language: string; direction: 'ltr' | 'rtl'; catalog: Record<string, unknown> } | null;
@@ -56,11 +62,11 @@ export async function loadRemoteCatalog(lang = i18n.language): Promise<void> {
 
     i18n.addResourceBundle(catalog.language, 'translation', catalog.catalog, true, true);
     const dir = catalog.direction === 'rtl' ? 'rtl' : 'ltr';
-    if (catalog.language === i18n.language) {
+    const active = currentLocale();
+    if (catalog.language === active || catalog.language === lang) {
       document.documentElement.dir = dir;
       document.documentElement.lang = catalog.language;
     }
-    await i18n.changeLanguage(catalog.language);
   } catch {
     // bundled dictionaries remain the fallback
   }
