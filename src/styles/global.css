@@ -1519,6 +1519,39 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .sa-mobile-only { display: none; }
 .sa-desktop-only { display: inline-flex; }
 
+.sa-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+.sa-lang-btn:hover { background: var(--card-strip); }
+.sa-lang-btn-lg { height: 38px; padding: 0 12px; }
+
+.sa-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
 .sa-backdrop-sidebar {
   display: none;
 }
