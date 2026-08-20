@@ -36,7 +36,7 @@ export function LoginPage() {
       // Only call session AFTER login resolved and the token is stored.
       const session = await authApi.session();
       qc.setQueryData(['session'], session);
-      navigate(session.user.platformRole ? '/saas-admin' : '/dashboard', { replace: true });
+      navigate(session.user.platformRole ? '/saas-admin/overview' : '/dashboard', { replace: true });
     } catch (err) {
       if (isApiError(err) && err.code === 'INVALID_CREDENTIALS') setError(t('errors.invalid_credentials'));
       else if (isApiError(err) && err.code === 'ACCOUNT_DISABLED') setError(t('errors.account_disabled'));
@@ -108,10 +108,10 @@ export function LoginPage() {
 
           <form onSubmit={submit}>
             <Field label={t('customer.login.email')} htmlFor="login-email">
-              <Input id="login-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" placeholder="demo@vcfo.ai" />
+              <Input id="login-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" placeholder="admin@vcfo.dev" />
             </Field>
             <Field label={t('customer.login.password')} htmlFor="login-password">
-              <Input id="login-password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" placeholder="Demo12345" />
+              <Input id="login-password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" placeholder="admin123" />
             </Field>
             <div className="flex" style={{ justifyContent: 'space-between', marginBottom: 14 }}>
               <label className="checkbox-row" style={{ fontSize: 12.5 }}>
@@ -124,7 +124,7 @@ export function LoginPage() {
             </div>
             {forgotOpen && (
               <div className="alert alert-info" style={{ fontSize: 12 }}>
-                demo@vcfo.ai · Demo12345 — {t('customer.login.demo_body')}
+                admin@vcfo.dev · admin123 — {t('customer.login.demo_body')}
               </div>
             )}
             {error && <div className="alert alert-error">{error}</div>}
@@ -142,7 +142,7 @@ export function LoginPage() {
               variant="ghost"
               className="mt-2"
               style={{ color: 'var(--primary)', fontWeight: 700 }}
-              onClick={() => void doLogin('demo@vcfo.ai', 'Demo12345')}
+              onClick={() => void doLogin('admin@vcfo.dev', 'admin123')}
             >
               {t('customer.login.enter_demo')} <span className="flip-rtl" aria-hidden="true">←</span>
             </Button>

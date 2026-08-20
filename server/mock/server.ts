@@ -392,46 +392,42 @@ function route(method: string, pattern: string, handler: Handler) {
 // AUTH / SESSION
 // ---------------------------------------------------------------------------
 
+function platformLoginUser(u: (typeof db.platformUsers)[number]) {
+  return {
+    id: u.id,
+    email: u.email,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    phone: null,
+    isActive: true,
+    isSuperAdmin: u.platformRole === 'SUPER_ADMIN',
+    platformRole: u.platformRole,
+  };
+}
+
 route('POST', '/api/v1/auth/login', async (req, res) => {
   const body = await readBody(req);
   const { email, password } = body ?? {};
   if (!email || !password) return error(res, ...VALIDATION, 'Email and password are required.');
 
-  const pu = db.platformUsers.find((u) => u.email.toLowerCase() === String(email).toLowerCase());
+  const emailNorm = String(email).trim().toLowerCase();
+  const pu = db.platformUsers.find((u) => u.email.toLowerCase() === emailNorm);
   if (pu) {
     if (password !== 'admin123') return error(res, 401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
     if (!pu.isActive) return error(res, 403, 'ACCOUNT_DISABLED', 'This platform account is disabled.');
-    json(res, 200, { accessToken: `mock.${pu.id}`, refreshToken: `mock.refresh.${pu.id}`, user: { id: pu.id, email: pu.email, firstName: pu.firstName, lastName: pu.lastName, phone: null, isActive: true, isSuperAdmin: pu.platformRole === 'SUPER_ADMIN', platformRole: pu.platformRole } });
+    json(res, 200, { accessToken: `mock.${pu.id}`, refreshToken: `mock.refresh.${pu.id}`, user: platformLoginUser(pu) });
     return;
   }
-  for (const c of db.customers) {
-    const u = c.users.find((x) => x.email.toLowerCase() === String(email).toLowerCase());
-    if (u) {
-      if (password !== 'demo1234') return error(res, 401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
-      if (u.membershipStatus === 'DISABLED' || !u.isActive)
-        return error(res, 403, 'ACCOUNT_DISABLED', 'This account is disabled. Contact VCFO administration.');
-      u.lastLoginAt = nowIso();
-      json(res, 200, {
-        accessToken: `mock.${u.id}`,
-        refreshToken: `mock.refresh.${u.id}`,
-        user: { id: u.id, email: u.email, firstName: u.firstName, lastName: u.lastName, phone: u.phone, isActive: u.isActive, isSuperAdmin: false, platformRole: null },
-      });
-      return;
-    }
-  }
 
-  // Demo behavior (matches demo.vcfo-ai.com): any email + 8-char password works,
-  // landing on the default demo customer. Known accounts above keep real auth.
-  const demoEmail = String(email).trim().toLowerCase();
-  if (demoEmail.includes('@') && String(password).length >= 8) {
-    const demo = db.customers.find((x) => x.code === 'CUS-1001');
-    const demoOwner = demo?.users.find((u) => u.customerRole === 'OWNER');
-    if (demo && demoOwner) {
-      demoOwner.lastLoginAt = nowIso();
+  // This frontend is the Super Admin console. Mock sign-in never opens the
+  // customer app (companies / branches / financial modules).
+  if (emailNorm.includes('@') && String(password).length >= 8) {
+    const admin = db.platformUsers.find((u) => u.platformRole === 'SUPER_ADMIN' && u.isActive);
+    if (admin) {
       json(res, 200, {
-        accessToken: `mock.${demoOwner.id}`,
-        refreshToken: `mock.refresh.${demoOwner.id}`,
-        user: { id: demoOwner.id, email: demoEmail, firstName: demoOwner.firstName, lastName: demoOwner.lastName, phone: demoOwner.phone, isActive: true, isSuperAdmin: false, platformRole: null },
+        accessToken: `mock.${admin.id}`,
+        refreshToken: `mock.refresh.${admin.id}`,
+        user: platformLoginUser(admin),
       });
       return;
     }
