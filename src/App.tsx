@@ -87,21 +87,37 @@ function SessionGate() {
   return <Outlet />;
 }
 
+function SessionSpinner() {
+  const { t } = useTranslation();
+  return (
+    <div className="page-loading">
+      <Spinner />
+      <span>{t('loading')}</span>
+    </div>
+  );
+}
+
 /** Customer users must never see /saas-admin (spec §48, §68). */
 function AdminGuard() {
-  const { t } = useTranslation();
   const session = useSession();
-  if (session.isLoading) {
-    return (
-      <div className="page-loading">
-        <Spinner />
-        <span>{t('loading')}</span>
-      </div>
-    );
-  }
-  const data = session.data;
-  if (!data?.user?.platformRole) return <Navigate to="/dashboard" replace />;
+  if (session.isLoading) return <SessionSpinner />;
+  if (!session.data?.user?.platformRole) return <Navigate to="/dashboard" replace />;
   return <Outlet />;
+}
+
+/** Platform staff never land in the tenant workspace (companies / branches / dashboard). */
+function CustomerGuard() {
+  const session = useSession();
+  if (session.isLoading) return <SessionSpinner />;
+  if (session.data?.user?.platformRole) return <Navigate to="/saas-admin/overview" replace />;
+  return <Outlet />;
+}
+
+function HomeRedirect() {
+  const session = useSession();
+  if (session.isLoading) return <SessionSpinner />;
+  if (session.data?.user?.platformRole) return <Navigate to="/saas-admin/overview" replace />;
+  return <Navigate to="/dashboard" replace />;
 }
 
 function NotFound() {
@@ -123,22 +139,24 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route element={<SessionGate />}>
-                <Route element={<CustomerLayout />}>
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/analytics" element={<ModulePlaceholderPage feature="ANALYTICS" titleKey="customer.analytics.title" subtitleKey="customer.analytics.subtitle" icon="📈" />} />
-                  <Route path="/forecast" element={<ModulePlaceholderPage feature="FORECAST" titleKey="customer.forecast.title" subtitleKey="customer.forecast.subtitle" icon="🔮" />} />
-                  <Route path="/scenario" element={<ModulePlaceholderPage feature="SCENARIO" titleKey="customer.scenario.title" subtitleKey="customer.scenario.subtitle" icon="🧭" />} />
-                  <Route path="/budget" element={<ModulePlaceholderPage feature="BUDGET_AND_TARGETS" titleKey="customer.budget.title" subtitleKey="customer.budget.subtitle" icon="🎯" />} />
-                  <Route path="/uploads" element={<UploadsPage />} />
-                  <Route path="/truth" element={<ModulePlaceholderPage feature="FINANCIAL_TRUTH" titleKey="customer.truth.title" subtitleKey="customer.truth.subtitle" icon="🔮" />} />
-                  <Route path="/statements" element={<ModulePlaceholderPage feature="FINANCIAL_STATEMENTS" titleKey="customer.statements.title" subtitleKey="customer.statements.subtitle" icon="📑" />} />
-                  <Route path="/companies" element={<CompaniesPage />} />
-                  <Route path="/branches" element={<BranchesPage />} />
-                  <Route path="/users" element={<CustomerUsersPage />} />
-                  <Route path="/account" element={<AccountPage />} />
-                  <Route path="/subscription" element={<SubscriptionPage />} />
-                  <Route path="/support" element={<SupportPage />} />
+                <Route element={<CustomerGuard />}>
+                  <Route element={<CustomerLayout />}>
+                    <Route path="/" element={<HomeRedirect />} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/analytics" element={<ModulePlaceholderPage feature="ANALYTICS" titleKey="customer.analytics.title" subtitleKey="customer.analytics.subtitle" icon="📈" />} />
+                    <Route path="/forecast" element={<ModulePlaceholderPage feature="FORECAST" titleKey="customer.forecast.title" subtitleKey="customer.forecast.subtitle" icon="🔮" />} />
+                    <Route path="/scenario" element={<ModulePlaceholderPage feature="SCENARIO" titleKey="customer.scenario.title" subtitleKey="customer.scenario.subtitle" icon="🧭" />} />
+                    <Route path="/budget" element={<ModulePlaceholderPage feature="BUDGET_AND_TARGETS" titleKey="customer.budget.title" subtitleKey="customer.budget.subtitle" icon="🎯" />} />
+                    <Route path="/uploads" element={<UploadsPage />} />
+                    <Route path="/truth" element={<ModulePlaceholderPage feature="FINANCIAL_TRUTH" titleKey="customer.truth.title" subtitleKey="customer.truth.subtitle" icon="🔮" />} />
+                    <Route path="/statements" element={<ModulePlaceholderPage feature="FINANCIAL_STATEMENTS" titleKey="customer.statements.title" subtitleKey="customer.statements.subtitle" icon="📑" />} />
+                    {/* <Route path="/companies" element={<CompaniesPage />} /> */}
+                    {/*<Route path="/branches" element={<BranchesPage />} /> */}
+                    <Route path="/users" element={<CustomerUsersPage />} />
+                    <Route path="/account" element={<AccountPage />} />
+                    <Route path="/subscription" element={<SubscriptionPage />} />
+                    <Route path="/support" element={<SupportPage />} />
+                  </Route>
                 </Route>
                 <Route path="/saas-admin" element={<AdminGuard />}>
                   <Route element={<AdminLayout />}>

@@ -106,8 +106,8 @@ export function CustomerLayout() {
     { to: '/forecast', icon: ICONS.planning, label: t('nav.forecast'), feature: 'FORECAST', group: 'PLANNING' },
     { to: '/scenario', icon: ICONS.planning, label: t('nav.scenario'), feature: 'SCENARIO', group: 'PLANNING' },
     { to: '/budget', icon: ICONS.planning, label: t('nav.budget'), feature: 'BUDGET_AND_TARGETS', group: 'PLANNING' },
-    { to: '/companies', icon: ICONS.workspace, label: t('customer.workspace.companies'), feature: null, group: 'WORKSPACE' },
-    { to: '/branches', icon: ICONS.workspace, label: t('customer.workspace.branches'), feature: null, group: 'WORKSPACE' },
+    // { to: '/companies', icon: ICONS.workspace, label: t('customer.workspace.companies'), feature: null, group: 'WORKSPACE' },
+    // { to: '/branches', icon: ICONS.workspace, label: t('customer.workspace.branches'), feature: null, group: 'WORKSPACE' },
     { to: '/users', icon: ICONS.workspace, label: t('customer.workspace.users'), feature: null, group: 'WORKSPACE' },
   ];
 

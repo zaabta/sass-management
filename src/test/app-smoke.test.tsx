@@ -9,19 +9,14 @@ import i18n from '../i18n';
  * "Rendered more hooks than during the previous render" happened because a
  * useEffect was placed after early returns — when the session query resolved,
  * the hook order changed. This test drives the real login → session flow.
+ *
+ * Mock/dev sign-in is Super Admin only — it must open the SaaS console, not
+ * the customer Financial Truth workspace.
  */
 const SESSION = {
-  user: { id: 'u1', email: 'owner@acme.demo', firstName: 'Alice', lastName: 'Morgan', phone: null, isActive: true, isSuperAdmin: false, platformRole: null },
-  customers: [{ id: 'c1', name: 'Acme', status: 'ACTIVE', role: 'OWNER', membershipStatus: 'ACTIVE', plan: 'BUSINESS', subscriptionStatus: 'ACTIVE', expiresAt: '2027-08-17' }],
-  tenant: {
-    customerId: 'c1',
-    companyId: 'co1',
-    customerStatus: 'ACTIVE' as const,
-    customerRole: 'OWNER',
-    subscription: { status: 'ACTIVE', plan: 'BUSINESS', planName: 'Business', billingCycle: 'MONTHLY', startDate: '2026-01-01', expiresAt: '2027-08-17', gracePeriodUntil: null, agreedPrice: 299, currency: 'USD' },
-    features: { DASHBOARD: { enabled: true, limitValue: null } },
-    limits: { MAX_COMPANIES: 10, MAX_BRANCHES: 100, MAX_USERS: 30, MAX_UPLOADS_PER_MONTH: 100, MAX_STORAGE_GB: 50, MAX_AI_REQUESTS_PER_MONTH: 0 },
-  },
+  user: { id: 'pu-1', email: 'admin@vcfo.dev', firstName: 'Admin', lastName: 'VCFO', phone: null, isActive: true, isSuperAdmin: true, platformRole: 'SUPER_ADMIN' as const },
+  customers: [],
+  tenant: null,
 };
 
 function envelope(data: unknown) {
@@ -40,23 +35,20 @@ beforeEach(async () => {
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith('/api/v1/auth/login')) {
-        return envelope({ accessToken: 'mock.test', user: SESSION.user });
+        return envelope({ accessToken: 'mock.pu-1', user: SESSION.user });
       }
       if (url.endsWith('/api/v1/auth/session')) return envelope(SESSION);
       if (url.includes('/i18n/languages')) return envelope([{ code: 'en', direction: 'ltr' }]);
       if (url.includes('/i18n/catalog')) return envelope({ language: 'en', direction: 'ltr', catalog: {} });
-      if (url.endsWith('/api/v1/companies')) {
-        return envelope([{ id: 'co1', name: 'Acme Holding', legalName: null, baseCurrency: 'USD', branches: 6, users: 4, createdAt: '2026-01-01' }]);
-      }
-      if (url.endsWith('/api/v1/dashboard')) {
+      if (url.includes('/api/v1/admin/overview')) {
         return envelope({
-          company: { id: 'co1', name: 'Acme Holding', baseCurrency: 'USD' },
-          period: { label: 'Aug 26', previousLabel: 'Jul 26' },
-          integrity: { status: 'passed', failed: false, issues: [] },
-          kpis: [],
-          trend: [],
-          targets_available: false,
-          statements_available: true,
+          customers: { total: 3, active: 2, suspended: 1 },
+          subscriptions: { trial: 1, active: 2, pastDue: 0, expired: 0, expiringIn7Days: 0, expiringIn30Days: 1 },
+          paymentsThisMonth: { count: 1, amount: '299' },
+          mrr: 299,
+          arr: 3588,
+          planDistribution: [],
+          growth: [],
         });
       }
       return envelope({});
@@ -65,22 +57,25 @@ beforeEach(async () => {
 });
 
 describe('app smoke', () => {
-  it('logs in and renders the dashboard without a hook-order crash', async () => {
-  window.history.pushState({}, '', '/login');
-  const errors: unknown[] = [];
-  const onError = window.onerror;
-  window.onerror = (msg) => {
-    errors.push(msg);
-    return false;
-  };
-  render(<App />);
+  it('logs in as Super Admin and renders the SaaS console without a hook-order crash', async () => {
+    window.history.pushState({}, '', '/login');
+    const errors: unknown[] = [];
+    const onError = window.onerror;
+    window.onerror = (msg) => {
+      errors.push(msg);
+      return false;
+    };
+    render(<App />);
 
-  await userEvent.type(screen.getByLabelText(/email/i), 'owner@acme.demo');
-  await userEvent.type(screen.getByLabelText(/password/i), 'demo1234');
-  await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    await userEvent.type(screen.getByLabelText(/email/i), 'admin@vcfo.dev');
+    await userEvent.type(screen.getByLabelText(/password/i), 'admin123');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
-  await waitFor(() => expect(screen.getByText(/financial truth/i)).toBeInTheDocument(), { timeout: 6000 });
-  expect(errors.filter((e) => String(e).includes('hooks'))).toHaveLength(0);
-  window.onerror = onError;
-});
+    await waitFor(() => expect(screen.getByRole('navigation', { name: /admin navigation/i })).toBeInTheDocument(), { timeout: 6000 });
+    expect(screen.getAllByText(/overview/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/what needs attention on the vcfo platform/i)).toBeInTheDocument();
+    expect(screen.queryByText(/financial truth/i)).not.toBeInTheDocument();
+    expect(errors.filter((e) => String(e).includes('hooks'))).toHaveLength(0);
+    window.onerror = onError;
+  });
 });
