@@ -11,7 +11,7 @@ import { CustomerLayout } from './features/customer/CustomerLayout';
 import { DashboardPage } from './features/customer/pages/DashboardPage';
 import { ModulePlaceholderPage } from './features/customer/pages/ModulePlaceholderPage';
 import { UploadsPage } from './features/customer/pages/UploadsPage';
-import { CompaniesPage, BranchesPage, UsersPage as CustomerUsersPage } from './features/customer/pages/WorkspacePages';
+import { UsersPage as CustomerUsersPage } from './features/customer/pages/WorkspacePages';
 import { AccountPage } from './features/customer/pages/AccountPage';
 import { SubscriptionPage } from './features/customer/pages/SubscriptionPage';
 import { SupportPage } from './features/customer/pages/SupportPage';
@@ -27,8 +27,6 @@ import { PaymentsPage } from './features/saas-admin/pages/PaymentsPage';
 import { UsersPage } from './features/saas-admin/pages/UsersPage';
 import { PlatformUsersPage } from './features/saas-admin/pages/PlatformUsersPage';
 import { AuditPage } from './features/saas-admin/pages/AuditPage';
-import { CompaniesPage as AdminCompaniesPage } from './features/saas-admin/pages/CompaniesPage';
-import { BranchesPage as AdminBranchesPage } from './features/saas-admin/pages/BranchesPage';
 import { InvoicesPage } from './features/saas-admin/pages/InvoicesPage';
 import { UsagePage } from './features/saas-admin/pages/UsagePage';
 import { AiUsagePage } from './features/saas-admin/pages/AiUsagePage';
@@ -165,8 +163,8 @@ export default function App() {
                     <Route path="customers" element={<CustomersPage />} />
                     <Route path="customers/create" element={<CreateCustomerPage />} />
                     <Route path="customers/:id" element={<CustomerDetailPage />} />
-                    <Route path="companies" element={<AdminCompaniesPage />} />
-                    <Route path="branches" element={<AdminBranchesPage />} />
+                    {/* <Route path="companies" element={<AdminCompaniesPage />} />
+                    <Route path="branches" element={<AdminBranchesPage />} /> */}
                     <Route path="subscriptions" element={<SubscriptionsPage />} />
                     <Route path="subscriptions/:id" element={<SubscriptionDetailPage />} />
                     <Route path="plans" element={<PlansPage />} />
