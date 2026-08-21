@@ -150,8 +150,8 @@ export default function App() {
                     <Route path="/uploads" element={<UploadsPage />} />
                     <Route path="/truth" element={<ModulePlaceholderPage feature="FINANCIAL_TRUTH" titleKey="customer.truth.title" subtitleKey="customer.truth.subtitle" icon="🔮" />} />
                     <Route path="/statements" element={<ModulePlaceholderPage feature="FINANCIAL_STATEMENTS" titleKey="customer.statements.title" subtitleKey="customer.statements.subtitle" icon="📑" />} />
-                    <Route path="/companies" element={<CompaniesPage />} />
-                    <Route path="/branches" element={<BranchesPage />} />
+                    {/* <Route path="/companies" element={<CompaniesPage />} /> */}
+                    {/*<Route path="/branches" element={<BranchesPage />} /> */}
                     <Route path="/users" element={<CustomerUsersPage />} />
                     <Route path="/account" element={<AccountPage />} />
                     <Route path="/subscription" element={<SubscriptionPage />} />
